@@ -1,5 +1,6 @@
 const { protect, getJwtSecret } = require('../middleware/authMiddleware');
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 const register = async (req, res) => {
   const { email, password } = req.body;
