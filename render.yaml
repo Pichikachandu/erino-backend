@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: erino-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: MONGO_URI
+        fromDatabase:
+          name: erino-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        value: https://your-frontend-url.onrender.com
+    plan: free
+    numInstances: 1
+
+databases:
+  - name: erino-db
+    databaseName: erino
+    user: erino_user
+    plan: free
