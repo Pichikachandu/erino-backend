@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const { protect, getJwtSecret } = require('../middleware/authMiddleware');
 const jwt = require('jsonwebtoken');
 
 const register = async (req, res) => {
@@ -22,8 +22,19 @@ const login = async (req, res) => {
 };
 
 const logout = (req, res) => {
-  res.cookie('jwt', '', { httpOnly: true, expires: new Date(0) });
-  res.status(200).json({ message: 'Logged out' });
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/',
+    expires: new Date(0)
+  };
+  
+  res.cookie('jwt', '', cookieOptions);
+  res.status(200).json({ 
+    success: true, 
+    message: 'Successfully logged out' 
+  });
 };
 
 const getUser = (req, res) => {
@@ -31,9 +42,36 @@ const getUser = (req, res) => {
 };
 
 const sendToken = (user, res, statusCode) => {
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-  res.cookie('jwt', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
-  res.status(statusCode).json({ id: user._id, email: user.email });
+  const secret = getJwtSecret();
+  const token = jwt.sign(
+    { id: user._id },
+    secret,
+    { expiresIn: '1d' }
+  );
+  
+  // Set cookie with secure options for production
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+    path: '/',
+  };
+
+  res.cookie('jwt', token, cookieOptions);
+  
+  const response = {
+    success: true,
+    id: user._id,
+    email: user.email
+  };
+
+  // Only include token in development for testing
+  if (process.env.NODE_ENV === 'development') {
+    response.token = token;
+  }
+
+  res.status(statusCode).json(response);
 };
 
 module.exports = { register, login, logout, getUser };
